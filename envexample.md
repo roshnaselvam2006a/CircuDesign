@@ -20,8 +20,8 @@ GROQ_API_KEY_STRUCTURAL=your_groq_key_for_structural_integrity_agent
 GROQ_API_KEY_LIFECYCLE=your_groq_key_for_circular_lifecycle_agent
 GROQ_API_KEY_ORCHESTRATOR=your_groq_key_for_orchestrator_agent
 
-# Optional: model name override (defaults to a Groq-hosted Llama/Mixtral model)
-GROQ_MODEL=llama-3.3-70b-versatile
+# Optional: model name override (e.g. gemma2-9b-it, deepseek-r1-distill-llama-70b)
+GROQ_MODEL=gemma2-9b-it
 
 # ---------- FIREBASE AUTH (frontend — Google Sign-In + Guest) ----------
 # Same config powers both Google Sign-In and Anonymous (guest) sign-in —
