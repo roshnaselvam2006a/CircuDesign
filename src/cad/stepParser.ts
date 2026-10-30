@@ -94,58 +94,95 @@ export async function parseStepBuffer(buffer: ArrayBuffer): Promise<ParsedCADMod
 function extractPartList(rawModel: any): CADPart[] {
   const parts: CADPart[] = [];
 
-  if (!rawModel.root || !rawModel.root.children) {
-    // Flat model — treat each mesh as a separate part
-    for (let i = 0; i < rawModel.meshes.length; i++) {
-      const mesh = rawModel.meshes[i];
-      parts.push({
-        name: mesh.name || `Part ${i + 1}`,
-        meshIndices: [i],
-        estimatedVolumeCm3: estimateMeshVolume(mesh),
-      });
+  // Walk the part tree if available
+  if (rawModel.root && rawModel.root.children && rawModel.root.children.length > 0) {
+    const walkNode = (node: any) => {
+      // If a node has a distinct non-generic name or has meshes
+      if (node.meshes && node.meshes.length > 0) {
+        const volume = node.meshes.reduce(
+          (sum: number, meshIdx: number) => sum + estimateMeshVolume(rawModel.meshes[meshIdx]),
+          0
+        );
+        parts.push({
+          name: node.name || `Component ${parts.length + 1}`,
+          meshIndices: [...node.meshes],
+          estimatedVolumeCm3: volume,
+        });
+      }
+
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          walkNode(child);
+        }
+      }
+    };
+
+    for (const child of rawModel.root.children) {
+      walkNode(child);
     }
-    return parts;
   }
 
-  // Walk the part tree
-  const walkNode = (node: any, depth: number) => {
-    if (node.meshes && node.meshes.length > 0) {
-      // This node has meshes — it's a leaf part
-      const volume = node.meshes.reduce(
-        (sum: number, meshIdx: number) => sum + estimateMeshVolume(rawModel.meshes[meshIdx]),
-        0
-      );
-      parts.push({
-        name: node.name || `Part ${parts.length + 1}`,
-        meshIndices: [...node.meshes],
-        estimatedVolumeCm3: volume,
-      });
-    }
+  // If no parts found from tree or if every face was exported as a single mesh
+  if (parts.length === 0) {
+    const totalMeshes = rawModel.meshes.length;
+    // If total meshes is reasonable (<= 30), keep them 1:1
+    if (totalMeshes <= 30) {
+      for (let i = 0; i < totalMeshes; i++) {
+        const mesh = rawModel.meshes[i];
+        parts.push({
+          name: mesh.name || `Component ${i + 1}`,
+          meshIndices: [i],
+          estimatedVolumeCm3: estimateMeshVolume(mesh),
+        });
+      }
+    } else {
+      // Meshes represent thousands of tessellated surface facets (e.g. 2000+ faces in STEP).
+      // Group them by named groups or chunk into major structural components (max 15-20 parts)
+      const namedGroups = new Map<string, number[]>();
+      for (let i = 0; i < totalMeshes; i++) {
+        const mesh = rawModel.meshes[i];
+        const groupKey = mesh.name && !mesh.name.match(/^Part\s*\d+$/i) && !mesh.name.match(/^Mesh\s*\d+$/i)
+          ? mesh.name
+          : `Group-${Math.floor(i / Math.ceil(totalMeshes / 12)) + 1}`;
+        if (!namedGroups.has(groupKey)) {
+          namedGroups.set(groupKey, []);
+        }
+        namedGroups.get(groupKey)!.push(i);
+      }
 
-    if (node.children) {
-      for (const child of node.children) {
-        walkNode(child, depth + 1);
+      let groupIdx = 1;
+      for (const [groupName, meshIndices] of namedGroups.entries()) {
+        const volume = meshIndices.reduce(
+          (sum: number, idx: number) => sum + estimateMeshVolume(rawModel.meshes[idx]),
+          0
+        );
+        const displayName = groupName.startsWith('Group-')
+          ? `Structural Member ${groupIdx}`
+          : groupName;
+        parts.push({
+          name: displayName,
+          meshIndices,
+          estimatedVolumeCm3: volume,
+        });
+        groupIdx++;
       }
     }
-  };
-
-  // Start from root children to skip the root assembly node itself
-  if (rawModel.root.children.length > 0) {
-    for (const child of rawModel.root.children) {
-      walkNode(child, 0);
-    }
   }
 
-  // If no parts were found from tree walking, fall back to mesh-level parts
-  if (parts.length === 0) {
-    for (let i = 0; i < rawModel.meshes.length; i++) {
-      const mesh = rawModel.meshes[i];
-      parts.push({
-        name: mesh.name || `Part ${i + 1}`,
-        meshIndices: [i],
-        estimatedVolumeCm3: estimateMeshVolume(mesh),
-      });
-    }
+  // Ensure parts count is capped to at most 30 for optimal agent reasoning and UI performance
+  if (parts.length > 30) {
+    // Keep top 25 largest parts by volume and group remaining into an assembly hardware group
+    parts.sort((a, b) => b.estimatedVolumeCm3 - a.estimatedVolumeCm3);
+    const topParts = parts.slice(0, 24);
+    const remaining = parts.slice(24);
+    const remainingMeshes = remaining.flatMap(p => p.meshIndices);
+    const remainingVol = remaining.reduce((sum, p) => sum + p.estimatedVolumeCm3, 0);
+    topParts.push({
+      name: 'Secondary Frame & Joinery Subassembly',
+      meshIndices: remainingMeshes,
+      estimatedVolumeCm3: remainingVol
+    });
+    return topParts;
   }
 
   return parts;

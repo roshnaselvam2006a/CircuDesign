@@ -140,6 +140,55 @@ export function findMaterialAlternative(
         ]
       }
     ];
+  } else if (lowerName.includes('wood') || lowerName.includes('timber') || lowerName.includes('hardwood') || lowerName.includes('oak') || lowerName.includes('beech') || lowerName.includes('pine') || lowerName.includes('chair') || (item.category === 'Structural Frame' && lowerName.includes('hardwood'))) {
+    candidates = [
+      {
+        id: 'mat-fsc-bamboo-composite',
+        name: 'FSC-Certified Rapidly Renewable Engineered Bamboo',
+        category: 'Structural Frame',
+        carbonFootprintKgCO2PerKg: 0.18,
+        recyclabilityScore: 95,
+        tensileStrengthMPa: 62,
+        costMultiplier: 0.90,
+        biobasedContentPercent: 100,
+        toxicityIndex: 'Low (Non-Toxic)',
+        supplyAvailabilityIndex: 'High',
+        reasoning: 'Engineered bamboo matures in 4 years vs 40+ years for hardwood timber, sequestering carbon with 60% lower carbon intensity than virgin kiln-dried oak.',
+        source: 'curated',
+        confidence: 96,
+        advantages: [
+          'Carbon-negative growth cycle (fast-growing bamboo grass)',
+          'High tensile strength exceeding traditional hardwoods',
+          'Naturally non-toxic zero-VOC bonding'
+        ],
+        tradeoffs: [
+          'Requires kiln-curing to protect against moisture warping'
+        ]
+      },
+      {
+        id: 'mat-recycled-wood-fiber',
+        name: 'Upcycled Agricultural Biomass & Lignin Timber',
+        category: 'Structural Frame',
+        carbonFootprintKgCO2PerKg: 0.22,
+        recyclabilityScore: 92,
+        tensileStrengthMPa: 52,
+        costMultiplier: 0.85,
+        biobasedContentPercent: 95,
+        toxicityIndex: 'Low (Non-Toxic)',
+        supplyAvailabilityIndex: 'High',
+        reasoning: 'Utilizes reclaimed industrial sawdust and bio-lignin binder, eliminating deforestation impact.',
+        source: 'curated',
+        confidence: 93,
+        advantages: [
+          '15% lower cost than virgin solid timber',
+          'Eliminates forestry depletion',
+          'Fully biodegradable at end-of-life'
+        ],
+        tradeoffs: [
+          'Slightly higher weight density'
+        ]
+      }
+    ];
   } else {
     candidates = [
       {

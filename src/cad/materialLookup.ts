@@ -139,6 +139,18 @@ const PART_NAME_RULES: Array<{
       recyclablePercent: 30,
     },
   },
+  {
+    keywords: ['wood', 'timber', 'oak', 'pine', 'beech', 'birch', 'maple', 'plywood', 'chair', 'seat', 'leg', 'backrest', 'armrest', 'slat', 'rungs', 'spindle', 'table'],
+    inference: {
+      material: 'Kiln-Dried Hardwood (Oak/Beech)',
+      category: 'Structural Frame',
+      tensileStrengthMPa: 55,
+      carbonFootprintKgCO2PerKg: 0.45,
+      joineryType: 'Threaded Fasteners',
+      densityGPerCm3: 0.68,
+      recyclablePercent: 85,
+    },
+  },
 ];
 
 /** Default inference when no keyword matches */

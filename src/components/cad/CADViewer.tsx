@@ -11,7 +11,7 @@
 
 import React, { useCallback, useMemo, useRef } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, Center } from '@react-three/drei';
+import { OrbitControls, Center, Bounds } from '@react-three/drei';
 import * as THREE from 'three';
 import type { ParsedCADModel } from '../../types';
 
@@ -24,8 +24,8 @@ interface CADViewerProps {
   className?: string;
 }
 
-/** Default part material — dark metallic gray matching CircuDesign theme */
-const DEFAULT_COLOR = new THREE.Color(0.35, 0.40, 0.45);
+/** Default part material — clean metallic slate matching CircuDesign theme */
+const DEFAULT_COLOR = new THREE.Color(0.55, 0.60, 0.65);
 /** Highlighted part color — emerald green matching CircuDesign accent */
 const HIGHLIGHT_COLOR = new THREE.Color(0.2, 0.85, 0.5);
 /** Hovered part color — subtle cyan glow */
@@ -52,8 +52,6 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
   onClick,
   onHover,
 }) => {
-  const geometryRef = useRef<THREE.BufferGeometry>(null);
-
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
 
@@ -75,12 +73,15 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
       geo.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.index.array), 1));
     }
 
+    if (!mesh.attributes?.normal?.array) {
+      geo.computeVertexNormals();
+    }
     geo.computeBoundingSphere();
     return geo;
   }, [mesh]);
 
   const color = isHighlighted ? HIGHLIGHT_COLOR : isHovered ? HOVER_COLOR : DEFAULT_COLOR;
-  const emissiveIntensity = isHighlighted ? 0.4 : isHovered ? 0.15 : 0;
+  const emissiveIntensity = isHighlighted ? 0.5 : isHovered ? 0.2 : 0.05;
 
   if (!isVisible) return null;
 
@@ -104,8 +105,8 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
         color={color}
         emissive={color}
         emissiveIntensity={emissiveIntensity}
-        metalness={0.3}
-        roughness={0.6}
+        metalness={0.25}
+        roughness={0.4}
         side={THREE.DoubleSide}
       />
     </mesh>
@@ -136,31 +137,34 @@ const Scene: React.FC<SceneProps> = ({
   return (
     <>
       {/* Lighting */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={1.0} castShadow />
-      <directionalLight position={[-3, -5, -4]} intensity={0.3} />
-      <pointLight position={[0, 10, 0]} intensity={0.4} />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[10, 20, 15]} intensity={1.2} />
+      <directionalLight position={[-10, -15, -10]} intensity={0.6} />
+      <pointLight position={[0, 15, 0]} intensity={0.5} />
 
-      {/* Model */}
-      <Center>
-        <group scale={[0.1, 0.1, 0.1]}>
-          {model.meshes.map((mesh: any, index: number) => (
-            <MeshPart
-              key={index}
-              mesh={mesh}
-              meshIndex={index}
-              isHighlighted={highlightedMeshIndex === index}
-              isHovered={hoveredMeshIndex === index}
-              isVisible={!uncheckedMeshes.includes(index)}
-              onClick={onMeshClick}
-              onHover={onMeshHover}
-            />
-          ))}
-        </group>
-      </Center>
+      {/* Auto-fit model using Bounds and Center */}
+      <Bounds fit clip observe margin={1.25}>
+        <Center>
+          <group>
+            {model.meshes.map((mesh: any, index: number) => (
+              <MeshPart
+                key={index}
+                mesh={mesh}
+                meshIndex={index}
+                isHighlighted={highlightedMeshIndex === index}
+                isHovered={hoveredMeshIndex === index}
+                isVisible={!uncheckedMeshes.includes(index)}
+                onClick={onMeshClick}
+                onHover={onMeshHover}
+              />
+            ))}
+          </group>
+        </Center>
+      </Bounds>
 
       {/* Controls */}
       <OrbitControls
+        makeDefault
         enableDamping
         dampingFactor={0.1}
         rotateSpeed={0.8}
@@ -198,7 +202,7 @@ export const CADViewer: React.FC<CADViewerProps> = ({
       />
 
       <Canvas
-        camera={{ position: [6, 4, 6], fov: 50 }}
+        camera={{ position: [50, 40, 50], fov: 45, near: 0.1, far: 20000 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
