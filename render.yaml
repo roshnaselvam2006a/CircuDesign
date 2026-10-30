@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: circudesign
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.10.0
+      - key: PORT
+        value: 10000
+      - key: BACKEND_PORT
+        value: 10000
+      - key: LOCAL_MATERIALS_DATASET_PATH
+        value: materials_dataset.csv

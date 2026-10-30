@@ -1,0 +1,72 @@
+
+# GEMINI_API_KEY: Required for Gemini AI API calls.
+GEMINI_API_KEY="MY_GEMINI_API_KEY"
+
+# APP_URL: The URL where this applet is hosted.
+APP_URL="MY_APP_URL"
+
+# ============================================
+# CircuDesign — Environment Variables Template
+# Copy this file to `.env` in both /frontend and /backend
+# Fill in real values. NEVER commit the real .env file.
+# ============================================
+
+# ---------- GROQ API KEYS (one dedicated key per agent) ----------
+# Each agent uses its OWN key — do not share keys across agents.
+# Get keys at: https://console.groq.com/keys
+GROQ_API_KEY_BOM=your_groq_key_for_bom_deconstruction_agent
+GROQ_API_KEY_MATERIAL=your_groq_key_for_material_science_agent
+GROQ_API_KEY_STRUCTURAL=your_groq_key_for_structural_integrity_agent
+GROQ_API_KEY_LIFECYCLE=your_groq_key_for_circular_lifecycle_agent
+GROQ_API_KEY_ORCHESTRATOR=your_groq_key_for_orchestrator_agent
+
+# Optional: model name override (defaults to a Groq-hosted Llama/Mixtral model)
+GROQ_MODEL=llama-3.3-70b-versatile
+
+# ---------- FIREBASE AUTH (frontend — Google Sign-In + Guest) ----------
+# Same config powers both Google Sign-In and Anonymous (guest) sign-in —
+# no separate keys needed for guest mode, just enable both providers in
+# Firebase Console > Authentication > Sign-in method.
+# Get these from Firebase Console > Project Settings > General > Your apps > Web app
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+
+# ---------- FIREBASE ADMIN (backend — token verification) ----------
+# Get this from Firebase Console > Project Settings > Service Accounts > Generate new private key
+# Paste the full JSON as a single-line string, or use a file path instead:
+FIREBASE_SERVICE_ACCOUNT_KEY=your_service_account_json_as_single_line_string
+# Alternative: point to a local file instead of inlining JSON
+# FIREBASE_SERVICE_ACCOUNT_KEY_PATH=./firebase-service-account.json
+
+# ---------- VECTOR STORE ----------
+# ChromaDB runs locally by default — no key needed.
+# Uncomment if using a hosted ChromaDB instance instead:
+# CHROMA_HOST=your_chroma_host
+# CHROMA_PORT=8000
+
+# ---------- YOUR MATERIALS CSV DATASET ----------
+# The CSV file sits directly inside the backend project folder (not a
+# separate data/ subfolder) so it's committed to Git and ships with the
+# code on every Render deploy — no external download, no separate storage.
+LOCAL_MATERIALS_DATASET_PATH=materials_dataset.csv
+
+# ---------- KAGGLE DATASET CREDENTIALS ----------
+KAGGLE_USERNAME=your_kaggle_username
+KAGGLE_KEY=your_kaggle_api_key
+
+# ---------- DUCKDUCKGO SEARCH ----------
+# No API key needed — the duckduckgo-search Python package is free and keyless.
+
+# ---------- APP CONFIG ----------
+BACKEND_PORT=8000
+FRONTEND_URL=http://localhost:5173
+BACKEND_URL=http://localhost:8000
+
+# ---------- DEPLOYMENT (fill when deploying) ----------
+# Vercel (frontend) and Render (backend) will need these same variables
+# set in their respective dashboard environment variable settings.
+

@@ -1,0 +1,8 @@
+{
+  "name": "CircuDesign",
+  "description": "Multi-agent AI platform for sustainable BOM redesign, circular lifecycle scoring, and constraint-satisfied material science engineering.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

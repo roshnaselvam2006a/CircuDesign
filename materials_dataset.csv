@@ -1,0 +1,82 @@
+material_name,category,co2_emissions,recyclable,biodegradable,cost_tier,common_uses,is_bio_based,replaces_material,notes
+Virgin ABS,plastic,8.5,yes,no,medium,"Electronic housings, automotive parts, LEGO bricks",no,,Standard petroleum-based engineering thermoplastic with moderate impact resistance.
+Recycled ABS,plastic,3.2,yes,no,medium,"Computer peripherals, consumer electronics casing, automotive interior parts",no,Virgin ABS,Diverts post-consumer waste from landfills with comparable mechanical properties to virgin ABS.
+Virgin Polycarbonate (PC),plastic,6.8,yes,no,medium,"Eyeglass lenses, protective gear, electronic components",no,,"High impact-resistant thermoplastic, energy-intensive to manufacture."
+Recycled Polycarbonate,plastic,2.9,yes,no,medium,"Laptops casing, automotive bezels, protective eyewear",no,Virgin Polycarbonate (PC),Reduces carbon footprint by up to 55% compared to virgin polycarbonate.
+Virgin PVC,plastic,3.1,no,no,low,"Pipework, window profiles, cable insulation",no,,"Durable synthetic plastic, releases toxic chlorine compounds upon incineration."
+Recycled PVC,plastic,1.4,no,no,low,"Drainage pipes, flooring tiles, cable ducts",no,Virgin PVC,Retains durability while reducing virgin petrochemical extraction.
+Virgin Polypropylene (PP),plastic,2.0,yes,no,low,"Packaging, bottle caps, living hinges, automotive bumpers",no,,Versatile commodity plastic with low density and good fatigue resistance.
+Recycled Polypropylene,plastic,0.9,yes,no,low,"Storage bins, crates, garden furniture, plant pots",no,Virgin Polypropylene (PP),High recyclability and significant embodied carbon savings.
+Virgin Polystyrene (PS),plastic,3.8,partial,no,low,"Disposable cutlery, CD cases, yogurt cups",no,,Rigid and brittle commodity plastic with poor recycling rates.
+Expanded Polystyrene (EPS),plastic,4.2,no,no,low,"Protective packaging, insulation panels, food containers",no,,Lightweight foam packaging notorious for breaking into microplastics.
+R-PET (Recycled PET),plastic,1.8,yes,no,medium,"Beverage bottles, textile fibers, food trays",no,Virgin PET,"Closed-loop recycling of post-consumer bottles, greatly reducing petroleum dependence."
+Bio-PLA (Polylactic Acid),biomaterial,1.8,partial,yes,medium,"3D printing filament, single-use cups, food packaging",yes,Virgin ABS,Derived from corn starch or sugarcane; requires industrial composting facilities.
+PHA (Polyhydroxyalkanoates),biomaterial,1.2,yes,yes,high,"Agricultural films, cosmetic containers, medical sutures",yes,Virgin Polypropylene (PP),"Fully biodegradable in marine and soil environments, produced via bacterial fermentation."
+Algae-based TPU,biomaterial,2.1,partial,partial,medium,"Footwear midsoles, phone cases, flexible grips",yes,Virgin TPU,Replaces a portion of petroleum-derived polyols with harvested harmful algae biomass.
+Starch-blend Bioplastic,biomaterial,1.5,yes,yes,low,"Shopping bags, compostable mailers, cutlery",yes,Virgin Polyethylene,"Inexpensive bio-based plastic alternative, though moisture sensitivity can limit shelf life."
+Virgin Aluminum,metal,12.5,yes,no,high,"Beverage cans, window frames, aircraft fuselages",no,,Extremely energy-intensive Hall-Héroult smelting process.
+Recycled Aluminum,metal,0.8,yes,no,medium,"Automotive body panels, cans, architectural extrusions",no,Virgin Aluminum,Saves 95% of the energy required for primary aluminum production with zero loss in quality.
+Virgin Copper,metal,3.8,yes,no,high,"Electrical wiring, plumbing pipes, heat exchangers",no,,Essential conductive metal facing declining ore grades and high mining impacts.
+Recycled Copper,metal,0.7,yes,no,medium,"Electrical cables, busbars, recycled plumbing fixtures",no,Virgin Copper,Infinitely recyclable without degradation of electrical or thermal conductivity.
+Virgin Stainless Steel,metal,6.1,yes,no,high,"Cutlery, surgical instruments, industrial tanks",no,,Corrosion-resistant alloy requiring nickel and chromium mining.
+Recycled Stainless Steel,metal,1.2,yes,no,medium,"Kitchen sinks, architectural cladding, fasteners",no,Virgin Stainless Steel,High scrap-metal input significantly drops energy requirements and carbon emissions.
+Virgin Carbon Steel,metal,2.3,yes,no,low,"Structural beams, automotive chassis, rebar",no,,Standard structural metal produced via blast furnaces.
+Recycled Scrap Steel,metal,0.5,yes,no,low,"Reinforcing bars, steel studs, hand tools",no,Virgin Carbon Steel,"Electric arc furnace recycling using scrap metal, drastically lowering emissions."
+Titanium Grade 5,metal,25.0,yes,no,high,"Aerospace components, medical implants, high-end sporting goods",no,,High strength-to-weight ratio but extremely energy-intensive Kroll processing.
+Recycled Titanium,metal,4.5,yes,no,high,"Industrial hardware, non-critical aerospace brackets",no,Titanium Grade 5,Utilizes scrap chips and machining swarf to lower cost and carbon footprint.
+Virgin Polyester,textile,5.5,partial,no,low,"Activewear, fleece jackets, upholstery",no,,Petroleum-derived synthetic fiber that sheds microplastics during washing.
+Recycled Polyester (rPET),textile,2.2,yes,no,medium,"T-shirts, backpacks, outdoor apparel",no,Virgin Polyester,Transforms discarded PET bottles into durable performance textiles.
+Virgin Nylon (Polyamide),textile,8.2,partial,no,medium,"Parachute cords, activewear, hosiery, carpets",no,,Strong synthetic fiber with significant nitrous oxide emissions during production.
+Recycled Nylon,textile,3.1,yes,no,medium,"Swimwear, fishing nets, durable luggage, outdoor gear",no,Virgin Nylon,Sourced from industrial waste and recovered ocean ghost nets.
+Conventional Cotton,textile,5.9,yes,yes,medium,"T-shirts, denim jeans, bedsheets",no,,Water-intensive crop requiring heavy pesticide and synthetic fertilizer use.
+Organic Cotton,textile,3.5,yes,yes,medium,"Eco-apparel, baby clothes, organic bedding",yes,Conventional Cotton,"Cultivated without synthetic pesticides or GMOs, preserving soil health and water purity."
+Linen (Flax),textile,1.5,yes,yes,medium,"Summer shirts, lightweight trousers, tablecloths",yes,Conventional Cotton,"Requires minimal irrigation and natural rainwater, naturally pest-resistant."
+Hemp Fabric,textile,1.1,yes,yes,medium,"Canvas bags, durable clothing, upholstery",yes,Conventional Cotton,Rapidly growing crop that sequesters significant carbon and enriches soil.
+Lyocell (Tencel),textile,2.3,yes,yes,medium,"Dresses, activewear linings, soft bedsheets",yes,Virgin Viscose,Produced from sustainably harvested wood pulp in a closed-loop solvent recovery system.
+Bamboo Viscose,textile,3.8,yes,yes,medium,"Underwear, socks, soft t-shirts",yes,Virgin Cotton,"Fast-growing plant source, though chemical processing can be intensive unless closed-loop."
+Recycled Wool,textile,1.2,yes,yes,medium,"Winter coats, blankets, felted accessories",no,Virgin Wool,Repurposes post-consumer woolen garments to eliminate livestock grazing impacts for new fiber.
+Ahimsa (Peace) Silk,textile,4.2,yes,yes,high,"Luxury garments, scarves, heritage textiles",yes,Conventional Silk,Harvested after silkworms complete their lifecycle and emerge from cocoons unharmed.
+Standard Alumina Ceramic,ceramic,3.4,no,no,medium,"Spark plug insulators, electronic substrates, cutting tools",no,,Hard and thermally stable technical ceramic requiring high-temp kiln firing.
+Recycled Glass Foam,ceramic,0.6,yes,no,medium,"Building insulation, lightweight fill, sound dampening blocks",no,Expanded Polystyrene (EPS),"Manufactured from post-consumer container glass, non-combustible and durable."
+Virgin Soda-Lime Glass,ceramic,1.4,yes,no,low,"Beverage bottles, jars, window panes",no,,Traditional silicate glass with high recyclability if sorted properly.
+Recycled Cullet Glass,ceramic,0.5,yes,no,low,"Glass containers, fiberglass insulation, decorative tiles",no,Virgin Soda-Lime Glass,"Lowers melting temperature in furnaces, reducing direct natural gas emissions."
+Geopolymer Concrete,ceramic,0.4,yes,no,low,"Precast panels, structural blocks, infrastructure paving",no,Portland Cement,Eliminates Portland cement clinker by activating industrial fly ash or slag with alkali solutions.
+Compressed Earth Block (CEB),ceramic,0.2,yes,no,low,"Load-bearing walls, sustainable housing, landscaping",yes,Standard Concrete Brick,"Locally sourced subsoil stabilized with minimal cement or lime, sun-dried without kiln firing."
+Fiberglass (GFRP),composite,4.8,no,no,medium,"Boat hulls, wind turbine blades, shower stalls",no,,Strong glass fiber reinforced polymer difficult to recycle at end-of-life.
+Flax-Epoxy Composite,composite,2.1,partial,partial,medium,"Surfboards, bicycle frames, interior automotive trim",yes,Fiberglass (GFRP),Natural flax fiber reinforcement lowers petroleum dependency and improves vibration damping.
+Hemp-PP Composite,composite,1.6,partial,no,medium,"Automotive door panels, storage bins, furniture shells",yes,Virgin ABS,Bio-composite offering weight reduction and lower embodied carbon in automotive manufacturing.
+Carbon Fiber Reinforced Polymer (CFRP),composite,28.0,no,no,high,"Aerospace structures, high-end bicycles, race car chassis",no,,Exceptional strength-to-weight ratio with extremely carbon-intensive precursor synthesis.
+Recycled Carbon Fiber,composite,5.2,partial,no,high,"Laptop chassis, sporting goods, consumer electronics reinforcement",no,Carbon Fiber Reinforced Polymer (CFRP),Recovered via pyrolysis and reclaimed for secondary structural applications.
+Mycelium Composite,biomaterial,0.3,yes,yes,low,"Protective packaging, acoustic ceiling tiles, modular furniture",yes,Expanded Polystyrene (EPS),Grown using fungal mycelium and agricultural waste; 100% home compostable.
+Virgin Softwood Lumber,wood,0.4,yes,yes,low,"Framing lumber, roof trusses, pallets",no,,Renewable natural building material with inherent carbon sequestration.
+FSC-Certified Hardwood,wood,0.6,yes,yes,medium,"Fine furniture, hardwood flooring, cabinetry",no,,Harvested from responsibly managed forests preserving biodiversity and indigenous rights.
+Engineered Bamboo Lumber,wood,0.7,yes,yes,medium,"Flooring, decking, structural beams, countertops",yes,Virgin Hardwood,Rapidly renewable grass species with compressive strength rivaling traditional hardwoods.
+Cork,wood,0.2,yes,yes,medium,"Wine stoppers, bulletin boards, flooring tiles, acoustic wall panels",yes,Synthetic Foam,Harvested from the bark of cork oak trees without harming the living tree; excellent insulation.
+MDF (Medium-Density Fiberboard),wood,1.1,no,no,low,"Shelving, speaker cabinets, interior joinery",no,,Wood fiber composite often bound with urea-formaldehyde resins.
+Bio-resin Bound Wood Particleboard,wood,0.5,yes,partial,low,"Flat-pack furniture, cabinetry cores, interior wall panels",yes,MDF,Uses agricultural wood residues bonded with formaldehyde-free bio-resins.
+Agricultural Straw Board,biomaterial,0.3,yes,yes,low,"Interior partitions, core boards, eco-packaging",yes,MDF,Upcycles waste wheat or rice straw left after grain harvest into rigid sheet materials.
+Virgin Synthetic Rubber (SBR),rubber,4.1,no,no,medium,"Car tires, conveyor belts, shoe soles",no,,Petroleum-derived elastomer with high wear resistance and slow environmental degradation.
+Recycled Tire Rubber (crumb),rubber,0.6,yes,no,low,"Playground turf infill, rubberized asphalt, athletic tracks",no,Virgin Synthetic Rubber (SBR),Diverts discarded automotive tires from landfills and prevents illegal dumping hazards.
+Natural Rubber (Latex),rubber,1.2,yes,yes,medium,"Gloves, elastic bands, shoe soles, seals",yes,Virgin Synthetic Rubber (SBR),Tapped from rubber trees (Hevea brasiliensis); renewable and biodegradable in pure form.
+Guayule Natural Rubber,rubber,1.4,yes,yes,medium,"Specialty tires, medical devices, industrial seals",yes,Natural Rubber (Latex),"Derived from a desert shrub grown in arid regions, reducing reliance on tropical rubber plantations."
+Recycled TPU,rubber,1.9,yes,no,medium,"Shoe components, watch straps, cable sheathing",no,Virgin TPU,Reprocessed thermoplastic polyurethane scrap reducing virgin polymer demand.
+Virgin Polyurethane Foam,plastic,5.2,no,no,medium,"Upholstered furniture, mattress cores, automotive seats",no,,"Flexible foam with high comfort properties, difficult to recycle economically."
+Recycled Polyurethane Foam,plastic,1.8,yes,no,low,"Carpet underlay, acoustic insulation panels, athletic mats",no,Virgin Polyurethane Foam,Rebonded foam scrap that gives second life to post-industrial and post-consumer cushioning.
+Soy-based Polyurethane Foam,biomaterial,3.1,partial,no,medium,"Eco-mattresses, furniture cushioning, automotive seating",yes,Virgin Polyurethane Foam,Replaces up to 40% of petroleum polyols with renewable soybean oil.
+Virgin LDPE,plastic,2.5,yes,no,low,"Plastic bags, squeeze bottles, agricultural films",no,,Low-density polyethylene with high flexibility and moisture resistance.
+Recycled LDPE,plastic,1.1,yes,no,low,"Trash bags, shipping envelopes, irrigation tubing",no,Virgin LDPE,Post-consumer film recycling reducing plastic bag pollution.
+Recycled High-Density Polyethylene (HDPE),plastic,0.9,yes,no,low,"Milk jugs, detergent bottles, outdoor plastic lumber",no,Virgin HDPE,Widely recycled rigid plastic with exceptional durability and chemical resistance.
+Virgin HDPE,plastic,2.2,yes,no,low,"Chemical drums, milk jugs, toys, piping",no,,Rigid petroleum thermoplastic with high strength-to-density ratio.
+Bio-PE (Bio-Polyethylene),biomaterial,1.4,yes,no,medium,"Shampoo bottles, bioplastic bags, cosmetic tubes",yes,Virgin HDPE,"Chemically identical to fossil PE but produced from sugarcane ethanol, sequestering carbon during growth."
+Basalt Fiber Composite,composite,2.9,yes,no,high,"Rebar, pressure vessels, marine structures",no,Carbon Fiber Reinforced Polymer (CFRP),Extruded volcanic rock offering high mechanical strength with lower energy input than carbon fiber.
+Recycled E-Glass Fiberglass,composite,2.4,partial,no,medium,"Automotive parts, industrial gratings",no,Fiberglass (GFRP),Reclaimed glass fiber from manufacturing trimming and wind turbine decommissioning.
+Wool Insulation,biomaterial,0.8,yes,yes,high,"Building wall insulation, acoustic baffles",yes,Fiberglass Insulation,Natural sheep wool regulating indoor humidity and naturally flame retardant without toxic chemicals.
+Cellulose Insulation,biomaterial,0.5,yes,partial,low,"Attic insulation, wall cavity fill",yes,Fiberglass Insulation,Made from recycled newsprint treated with natural borate minerals for fire and pest resistance.
+Recycled Denim Insulation,textile,0.7,yes,partial,medium,"Architectural acoustic panels, residential insulation",yes,Fiberglass Insulation,Post-industrial cotton denim scrap providing superior sound absorption and itch-free handling.
+Bagasse (Sugarcane Pulp),biomaterial,0.4,yes,yes,low,"Takeout food containers, molded pulp packaging, egg cartons",yes,Expanded Polystyrene (EPS),"Agricultural byproduct from sugar processing molded into sturdy, home-compostable containers."
+Wheat Straw Plastic,biomaterial,1.1,yes,yes,low,"Lunch boxes, tableware, phone accessories",yes,Virgin ABS,Blends natural wheat straw fibers with biopolymers to reduce plastic volume.
+Recycled Paperboard,ceramic,0.6,yes,yes,low,"Shipping boxes, cereal boxes, protective corner guards",no,Virgin Cardboard,High recycled content paper packaging supporting circular paper mills.
+Cast Bronze,metal,4.5,yes,no,high,"Bushings, bearings, sculptures, architectural hardware",no,,Copper-tin alloy with excellent wear resistance and longevity.
+Recycled Bronze,metal,1.0,yes,no,medium,"Marine hardware, bushings, decorative castings",no,Cast Bronze,Remelted scrap bronze preserving virgin copper and tin reserves.
+Magnesium Alloy AZ91,metal,9.2,yes,no,high,"Laptop chassis, camera bodies, automotive steering wheels",no,,Ultralight structural metal requiring careful handling during machining due to flammability.
+Recycled Magnesium,metal,2.1,yes,no,medium,"Power tool housings, electronic enclosures",no,Magnesium Alloy AZ91,Saves over 75% energy compared to primary magnesium extraction from dolomite or seawater.
