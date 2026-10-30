@@ -6,21 +6,25 @@
  * - Orbit controls (rotate, zoom, pan)
  * - Click-to-highlight individual parts
  * - Programmatic highlight via prop (for agent result linking)
- * - Show/hide parts via uncheckedMeshes
+ * - Show/hide parts via uncheckedParts
+ *
+ * PERFORMANCE: Renders one merged <mesh> per CADPart (max ~15),
+ * NOT one <mesh> per raw triangle surface (which can be 2000+).
  */
 
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls, Center, Bounds } from '@react-three/drei';
 import * as THREE from 'three';
-import type { ParsedCADModel } from '../../types';
+import type { ParsedCADModel, CADPart } from '../../types';
 
 interface CADViewerProps {
   model: ParsedCADModel;
-  highlightedMeshIndex: number;
-  onMeshClick: (meshIndex: number) => void;
-  onMeshHover: (meshIndex: number) => void;
-  uncheckedMeshes: number[];
+  /** Index into model.parts (NOT model.meshes) */
+  highlightedPartIndex: number;
+  onPartClick: (partIndex: number) => void;
+  onPartHover: (partIndex: number) => void;
+  uncheckedParts: number[];
   className?: string;
 }
 
@@ -31,21 +35,28 @@ const HIGHLIGHT_COLOR = new THREE.Color(0.2, 0.85, 0.5);
 /** Hovered part color — subtle cyan glow */
 const HOVER_COLOR = new THREE.Color(0.3, 0.7, 0.85);
 
-// ── Individual Mesh Component ──
+// ── Merged Part Mesh Component ──
 
-interface MeshPartProps {
-  mesh: any;
-  meshIndex: number;
+interface PartMeshProps {
+  meshes: any[];          // raw occt-import-js meshes for this part
+  meshIndices: number[];  // indices into model.meshes
+  partIndex: number;
   isHighlighted: boolean;
   isHovered: boolean;
   isVisible: boolean;
-  onClick: (meshIndex: number) => void;
-  onHover: (meshIndex: number) => void;
+  onClick: (partIndex: number) => void;
+  onHover: (partIndex: number) => void;
 }
 
-const MeshPart: React.FC<MeshPartProps> = React.memo(({
-  mesh,
-  meshIndex,
+/**
+ * Renders a SINGLE Three.js <mesh> for an entire CADPart by merging
+ * all the part's raw triangle meshes into one BufferGeometry.
+ * This is critical for performance: a STEP chair can have 2000+ meshes
+ * but only ~12 parts.
+ */
+const PartMesh: React.FC<PartMeshProps> = React.memo(({
+  meshes,
+  partIndex,
   isHighlighted,
   isHovered,
   isVisible,
@@ -53,32 +64,55 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
   onHover,
 }) => {
   const geometry = useMemo(() => {
+    // Accumulate all vertex data from this part's meshes
+    const allPositions: number[] = [];
+    const allNormals: number[] = [];
+
+    for (const mesh of meshes) {
+      if (!mesh?.attributes?.position?.array) continue;
+
+      const positions = mesh.attributes.position.array;
+      const normals = mesh.attributes?.normal?.array;
+      const indices = mesh.index?.array;
+
+      if (indices && indices.length > 0) {
+        // Unroll indexed geometry into non-indexed for easy merging
+        for (let i = 0; i < indices.length; i++) {
+          const idx = indices[i] * 3;
+          allPositions.push(positions[idx], positions[idx + 1], positions[idx + 2]);
+          if (normals) {
+            allNormals.push(normals[idx], normals[idx + 1], normals[idx + 2]);
+          } else {
+            allNormals.push(0, 0, 0); // placeholder; will be recomputed
+          }
+        }
+      } else {
+        // Non-indexed: directly copy
+        for (let i = 0; i < positions.length; i++) {
+          allPositions.push(positions[i]);
+        }
+        if (normals && normals.length === positions.length) {
+          for (let i = 0; i < normals.length; i++) {
+            allNormals.push(normals[i]);
+          }
+        }
+      }
+    }
+
     const geo = new THREE.BufferGeometry();
+    if (allPositions.length === 0) return geo;
 
-    if (mesh.attributes?.position?.array) {
-      geo.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(mesh.attributes.position.array, 3)
-      );
-    }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(allPositions, 3));
 
-    if (mesh.attributes?.normal?.array) {
-      geo.setAttribute(
-        'normal',
-        new THREE.Float32BufferAttribute(mesh.attributes.normal.array, 3)
-      );
-    }
-
-    if (mesh.index?.array) {
-      geo.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.index.array), 1));
-    }
-
-    if (!mesh.attributes?.normal?.array) {
+    if (allNormals.length === allPositions.length && allNormals.some(n => n !== 0)) {
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(allNormals, 3));
+    } else {
       geo.computeVertexNormals();
     }
+
     geo.computeBoundingSphere();
     return geo;
-  }, [mesh]);
+  }, [meshes]);
 
   const color = isHighlighted ? HIGHLIGHT_COLOR : isHovered ? HOVER_COLOR : DEFAULT_COLOR;
   const emissiveIntensity = isHighlighted ? 0.5 : isHovered ? 0.2 : 0.05;
@@ -90,11 +124,11 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
       geometry={geometry}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
-        onClick(meshIndex);
+        onClick(partIndex);
       }}
       onPointerOver={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
-        onHover(meshIndex);
+        onHover(partIndex);
       }}
       onPointerOut={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
@@ -113,26 +147,26 @@ const MeshPart: React.FC<MeshPartProps> = React.memo(({
   );
 });
 
-MeshPart.displayName = 'MeshPart';
+PartMesh.displayName = 'PartMesh';
 
 // ── Scene Contents ──
 
 interface SceneProps {
   model: ParsedCADModel;
-  highlightedMeshIndex: number;
-  hoveredMeshIndex: number;
-  onMeshClick: (meshIndex: number) => void;
-  onMeshHover: (meshIndex: number) => void;
-  uncheckedMeshes: number[];
+  highlightedPartIndex: number;
+  hoveredPartIndex: number;
+  onPartClick: (partIndex: number) => void;
+  onPartHover: (partIndex: number) => void;
+  uncheckedParts: number[];
 }
 
 const Scene: React.FC<SceneProps> = ({
   model,
-  highlightedMeshIndex,
-  hoveredMeshIndex,
-  onMeshClick,
-  onMeshHover,
-  uncheckedMeshes,
+  highlightedPartIndex,
+  hoveredPartIndex,
+  onPartClick,
+  onPartHover,
+  uncheckedParts,
 }) => {
   return (
     <>
@@ -146,18 +180,28 @@ const Scene: React.FC<SceneProps> = ({
       <Bounds fit clip observe margin={1.25}>
         <Center>
           <group>
-            {model.meshes.map((mesh: any, index: number) => (
-              <MeshPart
-                key={index}
-                mesh={mesh}
-                meshIndex={index}
-                isHighlighted={highlightedMeshIndex === index}
-                isHovered={hoveredMeshIndex === index}
-                isVisible={!uncheckedMeshes.includes(index)}
-                onClick={onMeshClick}
-                onHover={onMeshHover}
-              />
-            ))}
+            {model.parts.map((part: CADPart, partIndex: number) => {
+              // Collect the actual mesh objects for this part
+              const partMeshes = part.meshIndices
+                .filter(idx => idx >= 0 && idx < model.meshes.length)
+                .map(idx => model.meshes[idx]);
+
+              if (partMeshes.length === 0) return null;
+
+              return (
+                <PartMesh
+                  key={partIndex}
+                  meshes={partMeshes}
+                  meshIndices={part.meshIndices}
+                  partIndex={partIndex}
+                  isHighlighted={highlightedPartIndex === partIndex}
+                  isHovered={hoveredPartIndex === partIndex}
+                  isVisible={!uncheckedParts.includes(partIndex)}
+                  onClick={onPartClick}
+                  onHover={onPartHover}
+                />
+              );
+            })}
           </group>
         </Center>
       </Bounds>
@@ -179,18 +223,18 @@ const Scene: React.FC<SceneProps> = ({
 
 export const CADViewer: React.FC<CADViewerProps> = ({
   model,
-  highlightedMeshIndex,
-  onMeshClick,
-  onMeshHover,
-  uncheckedMeshes,
+  highlightedPartIndex,
+  onPartClick,
+  onPartHover,
+  uncheckedParts,
   className = '',
 }) => {
-  const [hoveredMeshIndex, setHoveredMeshIndex] = React.useState(-1);
+  const [hoveredPartIndex, setHoveredPartIndex] = React.useState(-1);
 
   const handleHover = useCallback((index: number) => {
-    setHoveredMeshIndex(index);
-    onMeshHover(index);
-  }, [onMeshHover]);
+    setHoveredPartIndex(index);
+    onPartHover(index);
+  }, [onPartHover]);
 
   return (
     <div className={`relative w-full h-full min-h-[300px] rounded-2xl overflow-hidden bg-[#080E1A] ${className}`}>
@@ -208,11 +252,11 @@ export const CADViewer: React.FC<CADViewerProps> = ({
       >
         <Scene
           model={model}
-          highlightedMeshIndex={highlightedMeshIndex}
-          hoveredMeshIndex={hoveredMeshIndex}
-          onMeshClick={onMeshClick}
-          onMeshHover={handleHover}
-          uncheckedMeshes={uncheckedMeshes}
+          highlightedPartIndex={highlightedPartIndex}
+          hoveredPartIndex={hoveredPartIndex}
+          onPartClick={onPartClick}
+          onPartHover={handleHover}
+          uncheckedParts={uncheckedParts}
         />
       </Canvas>
 
@@ -220,7 +264,7 @@ export const CADViewer: React.FC<CADViewerProps> = ({
       <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg bg-black/60 backdrop-blur-sm px-2.5 py-1 border border-white/10">
         <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
         <span className="text-[9px] font-semibold text-slate-300 uppercase tracking-wider">
-          3D CAD Viewer • occt-import-js
+          3D CAD Viewer • {model.parts.length} parts
         </span>
       </div>
     </div>

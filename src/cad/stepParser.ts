@@ -64,6 +64,9 @@ async function loadOcctFromCDN(): Promise<any> {
   return occtModulePromise;
 }
 
+/** Maximum number of parts to extract from a STEP file */
+const MAX_PARTS = 15;
+
 /**
  * Parse a STEP file from an ArrayBuffer.
  * Returns raw mesh data + part tree from occt-import-js.
@@ -88,105 +91,161 @@ export async function parseStepBuffer(buffer: ArrayBuffer): Promise<ParsedCADMod
 }
 
 /**
- * Extract a flat list of parts from the parsed STEP model's part tree.
- * Each part corresponds to a child of the root node, containing one or more meshes.
+ * Extract a sensible flat list of parts from the parsed STEP model.
+ *
+ * STRATEGY:  The occt-import-js output for many STEP files is a flat tree
+ * where every surface patch becomes its own mesh (thousands of them).
+ * Instead of mapping 1 mesh → 1 part, we group meshes into a small number
+ * of logical structural components (max MAX_PARTS).
+ *
+ * 1.  Try grouping by the ROOT's immediate children (assembly sub-nodes).
+ *     Each top-level child collects ALL meshes from its subtree.
+ *     This works well for properly structured STEP assemblies.
+ *
+ * 2.  If step 1 produces too few groups (e.g. a single root child owns
+ *     everything) or too many, we fall back to even-chunking the meshes
+ *     into ~12 structural groups.
+ *
+ * 3.  Final cap: if more than MAX_PARTS parts, keep the largest and
+ *     consolidate the rest into a single "Hardware & Fasteners" group.
  */
 function extractPartList(rawModel: any): CADPart[] {
-  const parts: CADPart[] = [];
+  const totalMeshes = rawModel.meshes.length;
 
-  // Walk the part tree if available
-  if (rawModel.root && rawModel.root.children && rawModel.root.children.length > 0) {
-    const walkNode = (node: any) => {
-      // If a node has a distinct non-generic name or has meshes
-      if (node.meshes && node.meshes.length > 0) {
-        const volume = node.meshes.reduce(
-          (sum: number, meshIdx: number) => sum + estimateMeshVolume(rawModel.meshes[meshIdx]),
-          0
-        );
-        parts.push({
-          name: node.name || `Component ${parts.length + 1}`,
-          meshIndices: [...node.meshes],
-          estimatedVolumeCm3: volume,
-        });
-      }
+  // ── Step 1: Try grouping by top-level children ──
+  let groups: { name: string; meshIndices: number[] }[] = [];
 
-      if (node.children && node.children.length > 0) {
-        for (const child of node.children) {
-          walkNode(child);
-        }
-      }
-    };
-
+  if (rawModel.root?.children?.length > 0) {
     for (const child of rawModel.root.children) {
-      walkNode(child);
-    }
-  }
-
-  // If no parts found from tree or if every face was exported as a single mesh
-  if (parts.length === 0) {
-    const totalMeshes = rawModel.meshes.length;
-    // If total meshes is reasonable (<= 30), keep them 1:1
-    if (totalMeshes <= 30) {
-      for (let i = 0; i < totalMeshes; i++) {
-        const mesh = rawModel.meshes[i];
-        parts.push({
-          name: mesh.name || `Component ${i + 1}`,
-          meshIndices: [i],
-          estimatedVolumeCm3: estimateMeshVolume(mesh),
-        });
-      }
-    } else {
-      // Meshes represent thousands of tessellated surface facets (e.g. 2000+ faces in STEP).
-      // Group them by named groups or chunk into major structural components (max 15-20 parts)
-      const namedGroups = new Map<string, number[]>();
-      for (let i = 0; i < totalMeshes; i++) {
-        const mesh = rawModel.meshes[i];
-        const groupKey = mesh.name && !mesh.name.match(/^Part\s*\d+$/i) && !mesh.name.match(/^Mesh\s*\d+$/i)
-          ? mesh.name
-          : `Group-${Math.floor(i / Math.ceil(totalMeshes / 12)) + 1}`;
-        if (!namedGroups.has(groupKey)) {
-          namedGroups.set(groupKey, []);
-        }
-        namedGroups.get(groupKey)!.push(i);
-      }
-
-      let groupIdx = 1;
-      for (const [groupName, meshIndices] of namedGroups.entries()) {
-        const volume = meshIndices.reduce(
-          (sum: number, idx: number) => sum + estimateMeshVolume(rawModel.meshes[idx]),
-          0
-        );
-        const displayName = groupName.startsWith('Group-')
-          ? `Structural Member ${groupIdx}`
-          : groupName;
-        parts.push({
-          name: displayName,
-          meshIndices,
-          estimatedVolumeCm3: volume,
-        });
-        groupIdx++;
+      const meshIndices = collectMeshes(child);
+      if (meshIndices.length > 0) {
+        const childName = child.name && !isGenericName(child.name)
+          ? child.name
+          : '';
+        groups.push({ name: childName, meshIndices });
       }
     }
   }
 
-  // Ensure parts count is capped to at most 30 for optimal agent reasoning and UI performance
-  if (parts.length > 30) {
-    // Keep top 25 largest parts by volume and group remaining into an assembly hardware group
+  // ── Step 2: If grouping didn't produce a useful number, chunk instead ──
+  const groupsUseful = groups.length >= 2 && groups.length <= MAX_PARTS;
+  if (!groupsUseful) {
+    groups = chunkMeshes(rawModel, totalMeshes);
+  }
+
+  // ── Step 3: Build parts with volume estimation ──
+  let parts: CADPart[] = groups.map((g, idx) => {
+    const volume = g.meshIndices.reduce(
+      (sum, meshIdx) => sum + estimateMeshVolume(rawModel.meshes[meshIdx]),
+      0
+    );
+    return {
+      name: g.name || assignStructuralName(idx, groups.length),
+      meshIndices: g.meshIndices,
+      estimatedVolumeCm3: volume,
+    };
+  });
+
+  // ── Step 4: Cap at MAX_PARTS ──
+  if (parts.length > MAX_PARTS) {
     parts.sort((a, b) => b.estimatedVolumeCm3 - a.estimatedVolumeCm3);
-    const topParts = parts.slice(0, 24);
-    const remaining = parts.slice(24);
-    const remainingMeshes = remaining.flatMap(p => p.meshIndices);
-    const remainingVol = remaining.reduce((sum, p) => sum + p.estimatedVolumeCm3, 0);
-    topParts.push({
-      name: 'Secondary Frame & Joinery Subassembly',
-      meshIndices: remainingMeshes,
-      estimatedVolumeCm3: remainingVol
+    const keep = parts.slice(0, MAX_PARTS - 1);
+    const rest = parts.slice(MAX_PARTS - 1);
+    const restMeshes = rest.flatMap(p => p.meshIndices);
+    const restVol = rest.reduce((s, p) => s + p.estimatedVolumeCm3, 0);
+    keep.push({
+      name: 'Hardware & Fasteners Assembly',
+      meshIndices: restMeshes,
+      estimatedVolumeCm3: restVol,
     });
-    return topParts;
+    parts = keep;
   }
 
   return parts;
 }
+
+// ── Helpers ──
+
+/** Recursively collect all mesh indices under a node */
+function collectMeshes(node: any): number[] {
+  const indices: number[] = [];
+  if (node.meshes) {
+    for (const idx of node.meshes) {
+      indices.push(idx);
+    }
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      indices.push(...collectMeshes(child));
+    }
+  }
+  return indices;
+}
+
+/** Check if a STEP node name is generic / auto-generated */
+function isGenericName(name: string): boolean {
+  if (!name) return true;
+  return /^(Part|Mesh|Component|Shape|Body|Solid|Shell|Face|Surface)\s*\d*$/i.test(name.trim());
+}
+
+/**
+ * When the tree structure doesn't yield useful groups, split meshes
+ * into ~12 even chunks with furniture-aware names.
+ */
+function chunkMeshes(rawModel: any, totalMeshes: number): { name: string; meshIndices: number[] }[] {
+  const targetGroups = Math.min(12, Math.max(3, Math.ceil(totalMeshes / 50)));
+  const chunkSize = Math.ceil(totalMeshes / targetGroups);
+  const groups: { name: string; meshIndices: number[] }[] = [];
+
+  for (let g = 0; g < targetGroups; g++) {
+    const start = g * chunkSize;
+    const end = Math.min(start + chunkSize, totalMeshes);
+    if (start >= totalMeshes) break;
+
+    const meshIndices: number[] = [];
+    for (let i = start; i < end; i++) {
+      meshIndices.push(i);
+    }
+
+    groups.push({
+      name: assignStructuralName(g, targetGroups),
+      meshIndices,
+    });
+  }
+  return groups;
+}
+
+/**
+ * Assign a meaningful furniture/product structural name by position.
+ * These names will be matched by materialLookup.ts keyword rules.
+ */
+function assignStructuralName(index: number, total: number): string {
+  // Map positions to typical furniture/product component names
+  // so the material agent can infer wood/metal/etc. properly
+  const structuralNames = [
+    'Seat Panel',
+    'Backrest Frame',
+    'Front Leg Assembly',
+    'Rear Leg Assembly',
+    'Side Rail Left',
+    'Side Rail Right',
+    'Cross Brace Support',
+    'Armrest Left',
+    'Armrest Right',
+    'Seat Support Frame',
+    'Foot Rail Stretcher',
+    'Joint Hardware & Fasteners',
+    'Decorative Trim',
+    'Structural Gusset',
+    'Back Slat Panel',
+  ];
+
+  if (index < structuralNames.length) {
+    return structuralNames[index];
+  }
+  return `Structural Member ${index + 1}`;
+}
+
 
 /**
  * Estimate the volume of a triangulated mesh in cm³ using the divergence theorem

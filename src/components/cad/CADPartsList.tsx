@@ -1,10 +1,13 @@
 /**
  * CAD Parts List sidebar component.
- * Shows extracted parts with checkboxes to show/hide meshes,
+ * Shows extracted parts with checkboxes to show/hide parts,
  * hover-to-highlight, and material/mass info.
  *
  * Ported from rahulworld/3d-cad-models-with-bom SideBar.js → TSX.
  * Styled to match CircuDesign's glass-panel dark aesthetic.
+ *
+ * Uses PART INDEX (not mesh index) for all interactions,
+ * matching the merged-geometry CADViewer.
  */
 
 import React from 'react';
@@ -14,21 +17,21 @@ import { inferMaterialFromPartName } from '../../cad/materialLookup';
 
 interface CADPartsListProps {
   model: ParsedCADModel;
-  highlightedMeshIndex: number;
-  onPartHover: (meshIndex: number) => void;
-  onPartClick: (meshIndex: number) => void;
-  uncheckedMeshes: number[];
-  onToggleMesh: (meshIndex: number) => void;
+  highlightedPartIndex: number;
+  onPartHover: (partIndex: number) => void;
+  onPartClick: (partIndex: number) => void;
+  uncheckedParts: number[];
+  onTogglePart: (partIndex: number) => void;
   onResetView: () => void;
 }
 
 export const CADPartsList: React.FC<CADPartsListProps> = ({
   model,
-  highlightedMeshIndex,
+  highlightedPartIndex,
   onPartHover,
   onPartClick,
-  uncheckedMeshes,
-  onToggleMesh,
+  uncheckedParts,
+  onTogglePart,
   onResetView,
 }) => {
   return (
@@ -54,9 +57,8 @@ export const CADPartsList: React.FC<CADPartsListProps> = ({
       {/* Parts list */}
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         {model.parts.map((part: CADPart, partIndex: number) => {
-          // Check if any of this part's meshes are highlighted
-          const isHighlighted = part.meshIndices.includes(highlightedMeshIndex);
-          const isHidden = part.meshIndices.every(i => uncheckedMeshes.includes(i));
+          const isHighlighted = highlightedPartIndex === partIndex;
+          const isHidden = uncheckedParts.includes(partIndex);
           const inferred = inferMaterialFromPartName(part.name);
 
           // Estimated mass
@@ -70,21 +72,15 @@ export const CADPartsList: React.FC<CADPartsListProps> = ({
                   ? 'bg-emerald-500/15 border-l-2 border-l-emerald-400'
                   : 'hover:bg-white/5 border-l-2 border-l-transparent'
               } ${isHidden ? 'opacity-40' : ''}`}
-              onMouseEnter={() => {
-                if (part.meshIndices.length > 0) onPartHover(part.meshIndices[0]);
-              }}
+              onMouseEnter={() => onPartHover(partIndex)}
               onMouseLeave={() => onPartHover(-1)}
-              onClick={() => {
-                if (part.meshIndices.length > 0) onPartClick(part.meshIndices[0]);
-              }}
+              onClick={() => onPartClick(partIndex)}
             >
               {/* Visibility toggle */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  for (const idx of part.meshIndices) {
-                    onToggleMesh(idx);
-                  }
+                  onTogglePart(partIndex);
                 }}
                 className="mt-0.5 text-slate-400 hover:text-white transition shrink-0"
                 title={isHidden ? 'Show part' : 'Hide part'}

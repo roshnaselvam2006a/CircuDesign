@@ -21,36 +21,34 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedPartId, setExpandedPartId] = useState<string | null>(null);
 
-  // CAD viewer state
-  const [highlightedMeshIndex, setHighlightedMeshIndex] = useState(-1);
-  const [uncheckedMeshes, setUncheckedMeshes] = useState<number[]>([]);
+  // CAD viewer state — uses PART index (not raw mesh index)
+  const [highlightedPartIndex, setHighlightedPartIndex] = useState(-1);
+  const [uncheckedParts, setUncheckedParts] = useState<number[]>([]);
 
-  const handleMeshClick = useCallback((meshIndex: number) => {
-    setHighlightedMeshIndex(prev => prev === meshIndex ? -1 : meshIndex);
-    // Find the BOM item corresponding to this mesh and expand it
-    if (cadModel) {
-      const part = cadModel.parts.find(p => p.meshIndices.includes(meshIndex));
-      if (part) {
-        const bomItem = bomItems.find(item => item.name === part.name || item.partId === `CAD-${(cadModel.parts.indexOf(part) + 1).toString().padStart(2, '0')}`);
-        if (bomItem) setExpandedPartId(bomItem.partId);
-      }
+  const handlePartClick = useCallback((partIndex: number) => {
+    setHighlightedPartIndex(prev => prev === partIndex ? -1 : partIndex);
+    // Find the BOM item corresponding to this part and expand it
+    if (cadModel && partIndex >= 0 && partIndex < cadModel.parts.length) {
+      const partId = `CAD-${(partIndex + 1).toString().padStart(2, '0')}`;
+      const bomItem = bomItems.find(item => item.partId === partId);
+      if (bomItem) setExpandedPartId(bomItem.partId);
     }
   }, [cadModel]);
 
-  const handleToggleMesh = useCallback((meshIndex: number) => {
-    setUncheckedMeshes(prev =>
-      prev.includes(meshIndex)
-        ? prev.filter(i => i !== meshIndex)
-        : [...prev, meshIndex]
+  const handleTogglePart = useCallback((partIndex: number) => {
+    setUncheckedParts(prev =>
+      prev.includes(partIndex)
+        ? prev.filter(i => i !== partIndex)
+        : [...prev, partIndex]
     );
   }, []);
 
   const handleResetCADView = useCallback(() => {
-    setHighlightedMeshIndex(-1);
-    setUncheckedMeshes([]);
+    setHighlightedPartIndex(-1);
+    setUncheckedParts([]);
   }, []);
 
-  // When a BOM table row is clicked, highlight the corresponding mesh in the 3D viewer
+  // When a BOM table row is clicked, highlight the corresponding part in the 3D viewer
   const handleBomRowClick = useCallback((partId: string) => {
     if (!cadModel) {
       setExpandedPartId(prev => prev === partId ? null : partId);
@@ -61,8 +59,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     if (match) {
       const partIndex = parseInt(match[1], 10) - 1;
       if (partIndex >= 0 && partIndex < cadModel.parts.length) {
-        const meshIdx = cadModel.parts[partIndex].meshIndices[0];
-        setHighlightedMeshIndex(prev => prev === meshIdx ? -1 : meshIdx);
+        setHighlightedPartIndex(prev => prev === partIndex ? -1 : partIndex);
       }
     }
     setExpandedPartId(prev => prev === partId ? null : partId);
@@ -368,10 +365,10 @@ ${outputs?.orchestrator?.executiveSummary || 'Redesign complete.'}
               }>
                 <CADViewer
                   model={cadModel}
-                  highlightedMeshIndex={highlightedMeshIndex}
-                  onMeshClick={handleMeshClick}
-                  onMeshHover={setHighlightedMeshIndex}
-                  uncheckedMeshes={uncheckedMeshes}
+                  highlightedPartIndex={highlightedPartIndex}
+                  onPartClick={handlePartClick}
+                  onPartHover={setHighlightedPartIndex}
+                  uncheckedParts={uncheckedParts}
                 />
               </Suspense>
             </div>
@@ -379,11 +376,11 @@ ${outputs?.orchestrator?.executiveSummary || 'Redesign complete.'}
             <div className="lg:col-span-1 h-full border-l border-white/10 bg-black/20 overflow-hidden">
               <CADPartsList
                 model={cadModel}
-                highlightedMeshIndex={highlightedMeshIndex}
-                onPartHover={setHighlightedMeshIndex}
-                onPartClick={handleMeshClick}
-                uncheckedMeshes={uncheckedMeshes}
-                onToggleMesh={handleToggleMesh}
+                highlightedPartIndex={highlightedPartIndex}
+                onPartHover={setHighlightedPartIndex}
+                onPartClick={handlePartClick}
+                uncheckedParts={uncheckedParts}
+                onTogglePart={handleTogglePart}
                 onResetView={handleResetCADView}
               />
             </div>
