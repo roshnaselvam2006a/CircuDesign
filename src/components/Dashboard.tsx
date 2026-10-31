@@ -22,15 +22,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [uploadTab, setUploadTab] = useState<'csv' | 'cad'>('csv');
   const [isParsingCAD, setIsParsingCAD] = useState(false);
   const [cadError, setCadError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleFileUpload = (file: File) => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    setUploadError(null);
+
+    // STEP files are text-based, so treating their records as CSV creates
+    // thousands of fake BOM rows. Route them to the geometry importer instead.
+    if (extension === 'step' || extension === 'stp') {
+      setUploadTab('cad');
+      void handleCADFileUpload(file);
+      return;
+    }
+    if (extension !== 'csv' && extension !== 'json') {
+      setUploadError('Unsupported file. Choose a .csv, .json, .step, or .stp file.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
         let items: BOMItem[] = [];
-        if (file.name.endsWith('.json')) {
+        if (extension === 'json') {
           items = JSON.parse(text);
+          if (!Array.isArray(items)) throw new Error('The JSON BOM must be an array of parts.');
         } else {
           const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
           if (lines.length <= 1) return;
@@ -110,19 +127,30 @@ export const Dashboard: React.FC<DashboardProps> = ({
             };
           });
         }
+        if (items.length > 250) {
+          throw new Error(`This BOM contains ${items.length} rows. Import a CSV or JSON BOM with 250 parts or fewer.`);
+        }
         if (items.length > 0) {
           onCustomFileUpload(items, file.name);
+        } else {
+          setUploadError('No BOM parts were found. Check the file and try again.');
         }
       } catch (err) {
-        alert('Could not parse BOM file. Please upload a valid CSV or JSON file.');
+        setUploadError(err instanceof Error ? err.message : 'Could not parse the BOM file. Please upload a valid CSV or JSON file.');
       }
     };
+    reader.onerror = () => setUploadError('The selected file could not be read. Please try again.');
     reader.readAsText(file);
   };
 
   const handleCADFileUpload = async (file: File) => {
+    if (!/\.(step|stp)$/i.test(file.name)) {
+      setCadError('Choose a .step or .stp CAD file.');
+      return;
+    }
     setIsParsingCAD(true);
     setCadError(null);
+    setUploadError(null);
     try {
       const buffer = await file.arrayBuffer();
       const model = await parseStepBuffer(buffer);
@@ -272,6 +300,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="block text-[9px] text-slate-500">
                   Supports .csv / .json
                 </span>
+
+                {uploadError && (
+                  <span className="block text-[10px] text-red-400 mt-1 font-medium" role="alert">
+                    {uploadError}
+                  </span>
+                )}
 
                 <label className="mt-3 inline-block cursor-pointer rounded-lg bg-white/5 px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-white/10 border border-white/15">
                   Browse
