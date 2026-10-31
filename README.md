@@ -21,6 +21,8 @@
 
 **CircuDesign** is an intelligent, multi-agent AI engineering workbench designed to transform traditional hardware product development. By combining **3D CAD STEP file parsing**, **Retrieval-Augmented Generation (RAG) material science intelligence**, and **multi-constraint structural validation**, CircuDesign enables engineering teams to autonomously audit, optimize, and redesign products for the **circular economy**—drastically reducing carbon footprints without compromising structural integrity.
 
+### [🚀 Try the Live Demo](https://circudesign-into.onrender.com/)
+
 </div>
 
 ---
