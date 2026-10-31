@@ -41,18 +41,23 @@ export async function runOrchestratorAgent(
     }
   }
 
+  const baselineCost = items.reduce((sum, item) => sum + item.unitCostUSD * item.quantity, 0);
+  const optimizedCost = items.reduce((sum, item) => {
+    const swap = proposedSwaps[item.partId];
+    return sum + item.unitCostUSD * item.quantity * (swap?.costMultiplier ?? 1);
+  }, 0);
   const constraintStates = {
     sustainability: lifecycleResults.carbonSavingsPercent >= 20,
-    structural: structuralResults.overallStatus !== 'failed_needs_swap',
-    cost: true, // within acceptable budget tolerance
-    supply: true // high/moderate supply availability index
+    structural: structuralResults.overallStatus === 'passed',
+    cost: optimizedCost <= baselineCost * 1.05,
+    supply: Object.values(proposedSwaps).every(swap => swap.supplyAvailabilityIndex !== 'Limited (Niche)')
   };
 
-  const humanGateRequired = flaggedSwaps.length > 0;
+  const humanGateRequired = flaggedSwaps.length > 0 || structuralResults.overallStatus === 'failed_needs_swap';
 
   // Generate plain-language executive summary using Gemini AI or structured fallback
   let executiveSummary = `Multi-agent pipeline optimized the Bill of Materials across 5 stages:
-• Swapped petroleum-based resins and virgin metals for bio-composites, recycled aluminum, and non-toxic bio-polymers.
+• Evaluated ${Object.keys(proposedSwaps).length} part-specific material substitution(s) against structural and supply constraints.
 • Achieved a ${lifecycleResults.carbonSavingsPercent}% carbon footprint reduction (${lifecycleResults.carbonSavingsKgCO2} kg CO2e saved per unit).
 • Improved recyclability to ${lifecycleResults.recyclabilityPercent}% and boosted disassembly ease score to ${lifecycleResults.disassemblyScore}/100.
 • ${humanGateRequired ? `${flaggedSwaps.length} material swap(s) flagged for engineering review.` : 'All structural safety margins and cost constraints satisfied.'}`;
@@ -63,7 +68,7 @@ export async function runOrchestratorAgent(
         model: 'gemini-3.6-flash',
         contents: `You are the Orchestrator Agent for CircuDesign, an AI platform for sustainable product redesign.
 Write a concise, professional, 3-bullet executive summary of this redesign:
-- Baseline Carbon: ${lifecycleResults.carbonSavingsKgCO2} kg CO2e saved (${lifecycleResults.carbonSavingsPercent}% reduction)
+- Carbon Saved: ${lifecycleResults.carbonSavingsKgCO2} kg CO2e (${lifecycleResults.carbonSavingsPercent}% reduction)
 - Recyclability: ${lifecycleResults.recyclabilityPercent}%
 - Disassembly Score: ${lifecycleResults.disassemblyScore}/100
 - Flagged Swaps: ${flaggedSwaps.length} item(s) flagged for human review.

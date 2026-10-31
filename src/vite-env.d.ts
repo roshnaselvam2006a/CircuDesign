@@ -1,5 +1,14 @@
 /// <reference types="vite/client" />
 
+declare module 'occt-import-js' {
+  export default function occtImportJs(options?: { locateFile?: (path: string) => string }): Promise<any>;
+}
+
+declare module 'occt-import-js/dist/occt-import-js.wasm?url' {
+  const wasmUrl: string;
+  export default wasmUrl;
+}
+
 interface ImportMetaEnv {
   readonly VITE_FIREBASE_API_KEY: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN: string;

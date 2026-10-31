@@ -219,12 +219,36 @@ apiRouter.post('/agent/run', async (req: Request, res: Response) => {
     // Agent 1: BOM Deconstruction
     const bomDeconstruction = runBomDeconstructionAgent(bomItems);
 
-    // Agent 2: Material Science
+    // Agent 2: Material Science researches candidate materials for each part.
     const materialScience = await runMaterialScienceAgent(bomItems, aiClient);
 
-    // Agent 3: Structural Integrity
-    const structuralIntegrity = runStructuralIntegrityAgent(bomItems, materialScience.proposedSwaps);
+    // Agent 3 validates the proposed swaps. If a candidate fails, ask the
+    // materials agent's researched alternatives for the first safe replacement
+    // and validate the coordinated BOM again before downstream scoring.
+    let structuralIntegrity = runStructuralIntegrityAgent(bomItems, materialScience.proposedSwaps);
+    if (structuralIntegrity.overallStatus === 'failed_needs_swap') {
+      let replacementsMade = 0;
+      for (const item of bomItems) {
+        if (structuralIntegrity.safetyMargins[item.partId]?.pass !== false) continue;
 
+        const safeAlternative = (materialScience.alternativesResearched[item.partId] || []).find(candidate =>
+          candidate.tensileStrengthMPa >= item.tensileStrengthMPa * 0.85
+        );
+        if (safeAlternative) {
+          materialScience.proposedSwaps[item.partId] = {
+            ...safeAlternative,
+            verifiedByStructural: true,
+          };
+          replacementsMade += 1;
+        }
+      }
+      if (replacementsMade > 0) {
+        structuralIntegrity = runStructuralIntegrityAgent(bomItems, materialScience.proposedSwaps);
+        structuralIntegrity.retriesTriggered += replacementsMade;
+      }
+    }
+
+    // Agents 4 and 5 receive the structurally validated final swaps.
     // Agent 4: Circular Lifecycle
     const circularLifecycle = runCircularLifecycleAgent(bomItems, materialScience.proposedSwaps);
 

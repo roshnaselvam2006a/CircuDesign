@@ -70,11 +70,17 @@ function MainApp() {
 
   const handleSelectSampleBOM = (bom: typeof SAMPLE_BOMS[0]) => {
     setActiveBom({ name: bom.name, items: bom.items });
+    setCurrentRun(null);
+    setLogs([]);
+    setCadModel(null);
     setViewMode('pipeline');
   };
 
   const handleCustomFileUpload = (items: BOMItem[], fileName: string) => {
     setActiveBom({ name: fileName, items });
+    setCurrentRun(null);
+    setLogs([]);
+    if (!/\.(step|stp)$/i.test(fileName)) setCadModel(null);
     setViewMode('pipeline');
   };
 
@@ -103,38 +109,8 @@ function MainApp() {
     setLogs([]);
     setCurrentRun(null);
 
-    // Live agent progression sequence with reflection loops
     setCurrentAgentId('bom');
-    addLog('bom', '1. BOM Deconstruction Agent', 'Parsing raw BOM structure, materials, and joint topology...');
-    await new Promise(r => setTimeout(r, 600));
-
-    setCurrentAgentId('material');
-    addLog('material', '2. Material Science Agent', 'Querying RAG database for non-toxic bio-polymers and recycled metal alloys...');
-    await new Promise(r => setTimeout(r, 800));
-
-    setCurrentAgentId('structural');
-    addLog('structural', '3. Structural Integrity Agent', 'Calculating yield stress ratios and mechanical load safety margins...');
-    await new Promise(r => setTimeout(r, 700));
-
-    addLog('structural', '3. Structural Integrity Agent', '[Warning]: Candidate swap flax-composite frame lacks sufficient tensile margin.');
-    await new Promise(r => setTimeout(r, 600));
-
-    setCurrentAgentId('material');
-    addLog('material', '2. Material Science Agent', '[Reflection Loop]: Re-evaluating alternative... Swapping flax matrix for Recycled Structural Steel.');
-    await new Promise(r => setTimeout(r, 700));
-
-    setCurrentAgentId('structural');
-    addLog('structural', '3. Structural Integrity Agent', '[Success]: Recycled steel alternative meets structural stress limits. Proceeding.');
-    await new Promise(r => setTimeout(r, 600));
-
-    setCurrentAgentId('lifecycle');
-    addLog('lifecycle', '4. Circular Lifecycle Agent', 'Scoring disassembly ease index, recyclability %, and embodied CO2e reductions...');
-    await new Promise(r => setTimeout(r, 600));
-
-    setCurrentAgentId('orchestrator');
-    addLog('orchestrator', '5. Orchestrator Agent', 'Evaluating 4 constraint quadrants (Sustainability, Structural, Cost, Supply)...');
-    await new Promise(r => setTimeout(r, 600));
-
+    addLog('bom', '1. BOM Deconstruction Agent', 'Validating and analyzing the submitted bill of materials...');
     try {
       const response = await fetch('/api/agent/run', {
         method: 'POST',
@@ -147,9 +123,20 @@ function MainApp() {
       });
 
       const data = await response.json();
+      if (!response.ok || !data?.success || !data.run) {
+        throw new Error(data?.error || `Pipeline request failed (${response.status})`);
+      }
       if (data && data.success && data.run) {
         const runRecord: PipelineRun = data.run;
         setCurrentRun(runRecord);
+
+        const outputs = runRecord.agentOutputs;
+        addLog('material', '2. Material Science Agent', `Researched alternatives for ${Object.keys(outputs.materialScience?.proposedSwaps || {}).length} BOM part(s).`);
+        addLog('structural', '3. Structural Integrity Agent', outputs.structuralIntegrity?.overallStatus === 'failed_needs_swap'
+          ? 'One or more substitutions remain below the structural threshold after checking available alternatives.'
+          : `Validated substitutions. Structural status: ${outputs.structuralIntegrity?.overallStatus || 'unknown'}.`);
+        addLog('lifecycle', '4. Circular Lifecycle Agent', `Calculated lifecycle impact: ${runRecord.carbonSavedPercent}% carbon reduction and ${runRecord.recyclabilityScore}% recyclability.`);
+        addLog('orchestrator', '5. Orchestrator Agent', outputs.orchestrator?.finalVerdict || 'Pipeline complete.');
 
         // Save run directly to user's private Firestore subcollection: users/{uid}/runs/{runId}
         if (currentUser && !currentUser.isAnonymous) {
@@ -162,8 +149,6 @@ function MainApp() {
 
         fetchHistory();
 
-        addLog('orchestrator', '5. Orchestrator Agent', 'Pipeline run complete. All constraints analyzed.');
-
         if (data.run.agentOutputs?.orchestrator?.humanGateRequired) {
           setViewMode('approval'); // HARD HALT: Direct to approval screen
         } else {
@@ -172,6 +157,7 @@ function MainApp() {
       }
     } catch (error) {
       console.error('Error running pipeline:', error);
+      addLog('orchestrator', '5. Orchestrator Agent', error instanceof Error ? `Pipeline failed: ${error.message}` : 'Pipeline failed. Please retry.');
     } finally {
       setIsProcessing(false);
       setCurrentAgentId(null);
@@ -281,6 +267,7 @@ function MainApp() {
         {viewMode === 'results' && currentRun && (
           <ProtectedRoute fallback={<AuthPage onSuccess={() => setViewMode('dashboard')} onBackToLanding={() => setViewMode('landing')} />}>
             <ResultsDashboard
+              key={currentRun.id}
               run={currentRun}
               onRunNewPipeline={() => setViewMode('dashboard')}
               cadModel={cadModel}
@@ -320,6 +307,7 @@ function MainApp() {
         runs={runs}
         onSelectRun={(run) => {
           setCurrentRun(run);
+          setCadModel(null);
           setViewMode('results');
         }}
         onDeleteRun={handleDeleteRun}
